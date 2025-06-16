@@ -1,0 +1,38 @@
+name: Build CRBOT for Android
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        abi: [armeabi-v7a, arm64-v8a]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Android NDK
+      uses: nttld/setup-ndk@v1
+      with:
+        ndk-version: r25c
+        add-to-path: true
+        
+    - name: Build CRBOT for ${{ matrix.abi }}
+      run: |
+        echo "Building for architecture: ${{ matrix.abi }}"
+        ndk-build APP_ABI=${{ matrix.abi }} NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=Android.mk
+        
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: crbot-${{ matrix.abi }}
+        path: libs/${{ matrix.abi }}/libcrbot.so
+        retention-days: 30
