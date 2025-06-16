@@ -19,36 +19,20 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: List repository contents
-      run: |
-        echo "Repository contents:"
-        ls -la
-        echo "Looking for required files:"
-        ls -la *.mk 2>/dev/null || echo "No .mk files found"
-        ls -la *.c 2>/dev/null || echo "No .c files found"
-        ls -la *.h 2>/dev/null || echo "No .h files found"
-        
     - name: Setup Android NDK
       uses: nttld/setup-ndk@v1
       with:
         ndk-version: r25c
         add-to-path: true
         
-    - name: Verify NDK installation
-      run: |
-        echo "NDK version:"
-        ndk-build --version
-        echo "NDK path: $ANDROID_NDK_ROOT"
-        
     - name: Build CRBOT for ${{ matrix.abi }}
       run: |
         echo "Building for architecture: ${{ matrix.abi }}"
         echo "Current directory: $(pwd)"
-        echo "Contents:"
-        ls -la
         
-        # Build with verbose output
-        ndk-build APP_ABI=${{ matrix.abi }} V=1
+        # Set NDK project path and build
+        export NDK_PROJECT_PATH=$(pwd)
+        ndk-build APP_ABI=${{ matrix.abi }} NDK_PROJECT_PATH=$NDK_PROJECT_PATH
         
     - name: Check build output
       run: |
