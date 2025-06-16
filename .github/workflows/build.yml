@@ -41,7 +41,60 @@ jobs:
         find . -maxdepth 1 -name "*.c" -exec cp {} jni/ \;
         find . -maxdepth 1 -name "*.h" -exec cp {} jni/ \;
         
-    - name: Update Application.mk for newer NDK
+    - name: Create proper Android.mk for game module
+      run: |
+        cat > jni/Android.mk << 'EOF'
+        LOCAL_PATH := $(call my-dir)
+
+        include $(CLEAR_VARS)
+
+        LOCAL_MODULE := crbot
+
+        LOCAL_SRC_FILES := \
+            crbot_compat.c \
+            cr_main.c \
+            cr_menu.c \
+            g_ai.c \
+            g_chase.c \
+            g_cmds.c \
+            g_combat.c \
+            g_ctf.c \
+            g_func.c \
+            g_items.c \
+            g_main.c \
+            g_misc.c \
+            g_monster.c \
+            g_phys.c \
+            g_save.c \
+            g_spawn.c \
+            g_svcmds.c \
+            g_target.c \
+            g_trigger.c \
+            g_utils.c \
+            g_weapon.c
+
+        LOCAL_CFLAGS := \
+            -DANDROID \
+            -D__ANDROID__ \
+            -Dstricmp=strcasecmp \
+            -O3 \
+            -ffast-math \
+            -fPIC \
+            -Wall
+
+        # Allow undefined symbols - they'll be provided by the game engine
+        LOCAL_LDFLAGS := \
+            -Wl,--allow-shlib-undefined \
+            -Wl,--no-undefined-version
+
+        LOCAL_LDLIBS := -llog -lm
+
+        include $(BUILD_SHARED_LIBRARY)
+        EOF
+        
+        echo "Created game module Android.mk"
+        
+    - name: Update Application.mk
       run: |
         cat > jni/Application.mk << 'EOF'
         APP_PLATFORM := android-21
@@ -66,6 +119,18 @@ jobs:
       run: |
         echo "Building for architecture: ${{ matrix.abi }}"
         $ANDROID_NDK_ROOT/ndk-build APP_ABI=${{ matrix.abi }} -j$(nproc)
+        
+    - name: Verify build output
+      run: |
+        echo "Build completed. Checking output:"
+        if [ -f "libs/${{ matrix.abi }}/libcrbot.so" ]; then
+          echo "✅ libcrbot.so created successfully"
+          ls -la libs/${{ matrix.abi }}/libcrbot.so
+          file libs/${{ matrix.abi }}/libcrbot.so
+        else
+          echo "❌ libcrbot.so not found"
+          ls -la libs/ 2>/dev/null || echo "No libs directory"
+        fi
         
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
