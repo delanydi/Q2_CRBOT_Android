@@ -86,7 +86,7 @@ jobs:
         APP_OPTIM := release
         EOF
         
-    - name: Create corrected stub functions (no duplicates)
+    - name: Create minimal stub functions (only missing ones)
       run: |
         cat > jni/stubs.c << 'EOF'
         #include <math.h>
@@ -194,40 +194,20 @@ jobs:
         void respawn(void *self) {}
         void PutClientInServer(void *ent) {}
         
-        // Spawn functions (no duplicates)
+        // Only the spawn functions that are truly missing
         void SP_info_player_start(void *ent) {}
         void SP_info_player_deathmatch(void *ent) {}
         void SP_info_player_coop(void *ent) {}
         void SP_info_player_intermission(void *ent) {}
-        void SP_info_player_team1(void *ent) {}
-        void SP_info_player_team2(void *ent) {}
         void SP_item_flag_team1(void *ent) {}
         void SP_item_flag_team2(void *ent) {}
         void SP_info_player_ctf(void *ent) {}
-        void SP_trigger_teleport(void *ent) {}
-        void SP_info_teleport_destination(void *ent) {}
         void SP_func_group(void *ent) {}
-        void SP_info_null(void *ent) {}
-        void SP_info_notnull(void *ent) {}
-        void SP_light(void *ent) {}
-        void SP_light_mine1(void *ent) {}
-        void SP_light_mine2(void *ent) {}
-        void SP_func_plat(void *ent) {}
-        void SP_func_button(void *ent) {}
-        void SP_func_door(void *ent) {}
-        void SP_func_door_secret(void *ent) {}
-        void SP_func_door_rotating(void *ent) {}
-        void SP_func_rotating(void *ent) {}
         void SP_func_train(void *ent) {}
-        void SP_func_water(void *ent) {}
         void SP_func_conveyor(void *ent) {}
-        void SP_func_areaportal(void *ent) {}
-        void SP_func_clock(void *ent) {}
-        void SP_func_wall(void *ent) {}
-        void SP_func_object(void *ent) {}
         void SP_func_timer(void *ent) {}
-        void SP_func_explosive(void *ent) {}
         void SP_func_killbox(void *ent) {}
+        void SP_func_door_secret(void *ent) {}
         EOF
         
     - name: Fix compatibility issues
@@ -237,7 +217,7 @@ jobs:
         
     - name: Build CRBOT for ${{ matrix.abi }}
       run: |
-        echo "Building for architecture: ${{ matrix.abi }}"
+        echo "🚀 Building CRBOT for architecture: ${{ matrix.abi }}"
         $ANDROID_NDK_ROOT/ndk-build APP_ABI=${{ matrix.abi }} -j$(nproc)
         
     - name: Verify build success
@@ -248,7 +228,7 @@ jobs:
           ls -la libs/${{ matrix.abi }}/libcrbot.so
           file libs/${{ matrix.abi }}/libcrbot.so
           echo "📦 File size: $(stat -c%s libs/${{ matrix.abi }}/libcrbot.so) bytes"
-          echo "🎉 CRBOT for Android is ready!"
+          echo "🎉 CRBOT for Quad Touch Android is ready!"
         else
           echo "❌ FAILED: libcrbot.so not found"
           ls -la libs/ 2>/dev/null || echo "No libs directory"
