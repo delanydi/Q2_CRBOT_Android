@@ -31,7 +31,7 @@ jobs:
         find . -maxdepth 1 -name "*.c" -exec cp {} jni/ \;
         find . -maxdepth 1 -name "*.h" -exec cp {} jni/ \;
         
-    - name: Create modern Android.mk with stub functions
+    - name: Create complete Android.mk
       run: |
         cat > jni/Android.mk << 'EOF'
         LOCAL_PATH := $(call my-dir)
@@ -69,14 +69,15 @@ jobs:
             -D__ANDROID__ \
             -Dstricmp=strcasecmp \
             -O2 \
-            -fPIC
+            -fPIC \
+            -Wno-pointer-to-int-cast
 
         LOCAL_LDLIBS := -llog -lm
 
         include $(BUILD_SHARED_LIBRARY)
         EOF
         
-    - name: Create Application.mk for modern NDK
+    - name: Create Application.mk
       run: |
         cat > jni/Application.mk << 'EOF'
         APP_PLATFORM := android-21
@@ -85,7 +86,7 @@ jobs:
         APP_OPTIM := release
         EOF
         
-    - name: Create stub functions
+    - name: Create complete stub functions
       run: |
         cat > jni/stubs.c << 'EOF'
         #include <math.h>
@@ -97,6 +98,8 @@ jobs:
         typedef float vec_t;
         typedef vec_t vec3_t[3];
         typedef int qboolean;
+        typedef struct edict_s edict_t;
+        typedef struct gitem_s gitem_t;
 
         // Vector math functions
         float VectorLength(vec3_t v) { 
@@ -178,6 +181,56 @@ jobs:
         void PlayerTrail_Init(void) {}
         qboolean M_CheckBottom(void *ent) { return 0; }
         qboolean M_walkmove(void *ent, float yaw, float dist) { return 0; }
+        
+        // Additional missing functions
+        void Weapon_Generic(void *ent, int FRAME_ACTIVATE_LAST, int FRAME_FIRE_LAST, 
+                           int FRAME_IDLE_LAST, int FRAME_DEACTIVATE_LAST, 
+                           int *pause_frames, int *fire_frames, void (*fire)(void *ent)) {}
+        
+        char *Info_ValueForKey(char *s, char *key) { 
+            static char value[512];
+            return value;
+        }
+        
+        void player_die(void *self, void *inflictor, void *attacker, int damage, vec3_t point) {}
+        void respawn(void *self) {}
+        void PutClientInServer(void *ent) {}
+        
+        // Spawn functions
+        void SP_info_player_start(void *ent) {}
+        void SP_info_player_deathmatch(void *ent) {}
+        void SP_info_player_coop(void *ent) {}
+        void SP_info_player_intermission(void *ent) {}
+        void SP_info_player_team1(void *ent) {}
+        void SP_info_player_team2(void *ent) {}
+        void SP_item_flag_team1(void *ent) {}
+        void SP_item_flag_team2(void *ent) {}
+        void SP_info_player_ctf(void *ent) {}
+        void SP_trigger_teleport(void *ent) {}
+        void SP_info_teleport_destination(void *ent) {}
+        void SP_func_group(void *ent) {}
+        void SP_info_null(void *ent) {}
+        void SP_info_notnull(void *ent) {}
+        void SP_light(void *ent) {}
+        void SP_light_mine1(void *ent) {}
+        void SP_light_mine2(void *ent) {}
+        void SP_info_player_start(void *ent) {}
+        void SP_func_plat(void *ent) {}
+        void SP_func_button(void *ent) {}
+        void SP_func_door(void *ent) {}
+        void SP_func_door_secret(void *ent) {}
+        void SP_func_door_rotating(void *ent) {}
+        void SP_func_rotating(void *ent) {}
+        void SP_func_train(void *ent) {}
+        void SP_func_water(void *ent) {}
+        void SP_func_conveyor(void *ent) {}
+        void SP_func_areaportal(void *ent) {}
+        void SP_func_clock(void *ent) {}
+        void SP_func_wall(void *ent) {}
+        void SP_func_object(void *ent) {}
+        void SP_func_timer(void *ent) {}
+        void SP_func_explosive(void *ent) {}
+        void SP_func_killbox(void *ent) {}
         EOF
         
     - name: Fix compatibility issues
@@ -189,6 +242,20 @@ jobs:
       run: |
         echo "Building for architecture: ${{ matrix.abi }}"
         $ANDROID_NDK_ROOT/ndk-build APP_ABI=${{ matrix.abi }} -j$(nproc)
+        
+    - name: Verify build success
+      run: |
+        echo "Build completed! Checking output:"
+        if [ -f "libs/${{ matrix.abi }}/libcrbot.so" ]; then
+          echo "✅ SUCCESS: libcrbot.so created for ${{ matrix.abi }}"
+          ls -la libs/${{ matrix.abi }}/libcrbot.so
+          file libs/${{ matrix.abi }}/libcrbot.so
+          echo "File size: $(stat -c%s libs/${{ matrix.abi }}/libcrbot.so) bytes"
+        else
+          echo "❌ FAILED: libcrbot.so not found"
+          ls -la libs/ 2>/dev/null || echo "No libs directory"
+          exit 1
+        fi
         
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
