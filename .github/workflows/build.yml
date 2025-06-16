@@ -86,7 +86,7 @@ jobs:
         APP_OPTIM := release
         EOF
         
-    - name: Create final stub functions (no duplicates)
+    - name: Create complete stub functions (final version)
       run: |
         cat > jni/stubs.c << 'EOF'
         #include <math.h>
@@ -207,6 +207,13 @@ jobs:
         void ClientBeginServerFrame(edict_t *ent) {}
         void ClientEndServerFrame(edict_t *ent) {}
         void CopyToBodyQue(edict_t *ent) {}
+        void ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker) {}
+        void TossClientWeapon(edict_t *self) {}
+        
+        // Spawn point functions
+        edict_t *SelectFarthestDeathmatchSpawnPoint(void) { return NULL; }
+        float PlayersRangeFromSpot(edict_t *spot) { return 0.0f; }
+        edict_t *SelectRandomDeathmatchSpawnPoint(void) { return NULL; }
         
         // Weapon functions
         void Weapon_Generic(void *ent, int FRAME_ACTIVATE_LAST, int FRAME_FIRE_LAST, 
@@ -226,9 +233,34 @@ jobs:
         void Weapon_Railgun(edict_t *ent) {}
         void Weapon_BFG(edict_t *ent) {}
         
-        // Item functions (only the ones NOT in g_items.c)
+        // Item functions
         qboolean Pickup_Weapon(edict_t *ent, edict_t *other) { return 0; }
         void Drop_Weapon(edict_t *ent, gitem_t *item) {}
+        
+        // Menu functions
+        void PMenu_Close(edict_t *ent) {}
+        void PMenu_Open(edict_t *ent, void *menu) {}
+        void PMenu_Next(edict_t *ent) {}
+        void PMenu_Prev(edict_t *ent) {}
+        void PMenu_Select(edict_t *ent) {}
+        
+        // AI functions
+        void M_ChangeYaw(edict_t *ent) {}
+        qboolean M_MoveToGoal(edict_t *ent, float dist) { return 0; }
+        
+        // Player trail functions
+        edict_t *PlayerTrail_PickNext(edict_t *self) { return NULL; }
+        edict_t *PlayerTrail_PickFirst(edict_t *self) { return NULL; }
+        
+        // Projection function
+        void P_ProjectSource(gclient_t *client, vec3_t point, vec3_t distance, vec3_t forward, vec3_t right, vec3_t result) {}
+        
+        // Scoreboard function
+        void DeathmatchScoreboard(edict_t *ent) {}
+        
+        // Command functions
+        void Cmd_Score_f(edict_t *ent) {}
+        void Cmd_Help_f(edict_t *ent) {}
         
         char *Info_ValueForKey(char *s, char *key) { 
             static char value[512];
@@ -271,10 +303,9 @@ jobs:
           echo ""
           echo "🎉🎉🎉 CRBOT FOR QUAD TOUCH ANDROID IS READY! 🎉🎉🎉"
           echo ""
-          echo "Your CRBOT library has been successfully compiled for Android!"
-          echo "Download the artifact and copy libcrbot.so to your Android device."
-          echo ""
-          echo "🎮 Ready to play Quake 2 with bots on Android! 🎮"
+          echo "🎮 Your CRBOT library has been successfully compiled for Android!"
+          echo "📱 Download the artifact and copy libcrbot.so to your Android device."
+          echo "🤖 Ready to play Quake 2 with bots on Quad Touch! 🤖"
         else
           echo "❌ FAILED: libcrbot.so not found"
           ls -la libs/ 2>/dev/null || echo "No libs directory"
