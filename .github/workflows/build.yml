@@ -25,23 +25,30 @@ jobs:
         ndk-version: r25c
         add-to-path: true
         
+    - name: Prepare NDK project structure
+      run: |
+        echo "Creating jni directory structure"
+        mkdir -p jni
+        
+        # Move build files to jni directory
+        cp Android.mk jni/
+        cp Application.mk jni/
+        
+        # Move all source files to jni directory
+        cp *.c jni/ 2>/dev/null || true
+        cp *.h jni/ 2>/dev/null || true
+        
+        echo "Contents of jni directory:"
+        ls -la jni/
+        
     - name: Build CRBOT for ${{ matrix.abi }}
       run: |
         echo "Building for architecture: ${{ matrix.abi }}"
-        echo "Current directory: $(pwd)"
         
-        # Set NDK project path and build
-        export NDK_PROJECT_PATH=$(pwd)
-        ndk-build APP_ABI=${{ matrix.abi }} NDK_PROJECT_PATH=$NDK_PROJECT_PATH
-        
-    - name: Check build output
-      run: |
-        echo "Build completed. Checking output:"
-        ls -la libs/ 2>/dev/null || echo "No libs directory created"
-        ls -la libs/${{ matrix.abi }}/ 2>/dev/null || echo "No ${{ matrix.abi }} directory"
+        # Build using standard NDK structure
+        $ANDROID_NDK_ROOT/ndk-build APP_ABI=${{ matrix.abi }}
         
     - name: Upload build artifacts
-      if: success()
       uses: actions/upload-artifact@v4
       with:
         name: crbot-${{ matrix.abi }}
