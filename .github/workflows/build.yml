@@ -19,10 +19,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Setup Android NDK
+    - name: Setup Android NDK r21e (older, more permissive)
       uses: nttld/setup-ndk@v1
       with:
-        ndk-version: r25c
+        ndk-version: r21e
         add-to-path: true
         
     - name: Prepare NDK project structure
@@ -41,7 +41,7 @@ jobs:
         find . -maxdepth 1 -name "*.c" -exec cp {} jni/ \;
         find . -maxdepth 1 -name "*.h" -exec cp {} jni/ \;
         
-    - name: Create proper Android.mk for game module
+    - name: Create Android.mk for older NDK
       run: |
         cat > jni/Android.mk << 'EOF'
         LOCAL_PATH := $(call my-dir)
@@ -77,29 +77,20 @@ jobs:
             -DANDROID \
             -D__ANDROID__ \
             -Dstricmp=strcasecmp \
-            -O3 \
-            -ffast-math \
-            -fPIC \
-            -Wall
-
-        # Allow undefined symbols - they'll be provided by the game engine
-        LOCAL_LDFLAGS := \
-            -Wl,--allow-shlib-undefined \
-            -Wl,--no-undefined-version
+            -O2 \
+            -fPIC
 
         LOCAL_LDLIBS := -llog -lm
 
         include $(BUILD_SHARED_LIBRARY)
         EOF
         
-        echo "Created game module Android.mk"
-        
-    - name: Update Application.mk
+    - name: Update Application.mk for older NDK
       run: |
         cat > jni/Application.mk << 'EOF'
-        APP_PLATFORM := android-21
+        APP_PLATFORM := android-16
         APP_ABI := armeabi-v7a arm64-v8a
-        APP_STL := c++_static
+        APP_STL := gnustl_static
         APP_OPTIM := release
         EOF
         
@@ -118,6 +109,7 @@ jobs:
     - name: Build CRBOT for ${{ matrix.abi }}
       run: |
         echo "Building for architecture: ${{ matrix.abi }}"
+        echo "NDK version: $($ANDROID_NDK_ROOT/ndk-build --version)"
         $ANDROID_NDK_ROOT/ndk-build APP_ABI=${{ matrix.abi }} -j$(nproc)
         
     - name: Verify build output
