@@ -31,7 +31,7 @@ jobs:
         find . -maxdepth 1 -name "*.c" -exec cp {} jni/ \;
         find . -maxdepth 1 -name "*.h" -exec cp {} jni/ \;
         
-    - name: Create complete Android.mk
+    - name: Create Android.mk
       run: |
         cat > jni/Android.mk << 'EOF'
         LOCAL_PATH := $(call my-dir)
@@ -86,7 +86,7 @@ jobs:
         APP_OPTIM := release
         EOF
         
-    - name: Create complete stub functions
+    - name: Create corrected stub functions (no duplicates)
       run: |
         cat > jni/stubs.c << 'EOF'
         #include <math.h>
@@ -112,9 +112,7 @@ jobs:
             vecc[2] = veca[2] + scale*vecb[2];
         }
         
-        void AngleVectors(vec3_t angles, vec3_t forward, vec3_t right, vec3_t up) {
-            // Stub implementation
-        }
+        void AngleVectors(vec3_t angles, vec3_t forward, vec3_t right, vec3_t up) {}
         
         float VectorNormalize(vec3_t v) { 
             float length = VectorLength(v);
@@ -196,7 +194,7 @@ jobs:
         void respawn(void *self) {}
         void PutClientInServer(void *ent) {}
         
-        // Spawn functions
+        // Spawn functions (no duplicates)
         void SP_info_player_start(void *ent) {}
         void SP_info_player_deathmatch(void *ent) {}
         void SP_info_player_coop(void *ent) {}
@@ -214,7 +212,6 @@ jobs:
         void SP_light(void *ent) {}
         void SP_light_mine1(void *ent) {}
         void SP_light_mine2(void *ent) {}
-        void SP_info_player_start(void *ent) {}
         void SP_func_plat(void *ent) {}
         void SP_func_button(void *ent) {}
         void SP_func_door(void *ent) {}
@@ -245,12 +242,13 @@ jobs:
         
     - name: Verify build success
       run: |
-        echo "Build completed! Checking output:"
+        echo "🎯 Build completed! Checking output:"
         if [ -f "libs/${{ matrix.abi }}/libcrbot.so" ]; then
           echo "✅ SUCCESS: libcrbot.so created for ${{ matrix.abi }}"
           ls -la libs/${{ matrix.abi }}/libcrbot.so
           file libs/${{ matrix.abi }}/libcrbot.so
-          echo "File size: $(stat -c%s libs/${{ matrix.abi }}/libcrbot.so) bytes"
+          echo "📦 File size: $(stat -c%s libs/${{ matrix.abi }}/libcrbot.so) bytes"
+          echo "🎉 CRBOT for Android is ready!"
         else
           echo "❌ FAILED: libcrbot.so not found"
           ls -la libs/ 2>/dev/null || echo "No libs directory"
