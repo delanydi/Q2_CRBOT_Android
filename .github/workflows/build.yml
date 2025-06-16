@@ -1,4 +1,3 @@
-
 name: Build CRBOT for Android
 
 on:
@@ -87,7 +86,7 @@ jobs:
         APP_OPTIM := release
         EOF
         
-    - name: Create complete stub functions
+    - name: Create final stub functions (no duplicates)
       run: |
         cat > jni/stubs.c << 'EOF'
         #include <math.h>
@@ -227,15 +226,9 @@ jobs:
         void Weapon_Railgun(edict_t *ent) {}
         void Weapon_BFG(edict_t *ent) {}
         
-        // Item functions
+        // Item functions (only the ones NOT in g_items.c)
         qboolean Pickup_Weapon(edict_t *ent, edict_t *other) { return 0; }
         void Drop_Weapon(edict_t *ent, gitem_t *item) {}
-        qboolean Pickup_Ammo(edict_t *ent, edict_t *other) { return 0; }
-        void Drop_Ammo(edict_t *ent, gitem_t *item) {}
-        qboolean Pickup_Armor(edict_t *ent, edict_t *other) { return 0; }
-        qboolean Pickup_Health(edict_t *ent, edict_t *other) { return 0; }
-        qboolean Pickup_Powerup(edict_t *ent, edict_t *other) { return 0; }
-        void Drop_General(edict_t *ent, gitem_t *item) {}
         
         char *Info_ValueForKey(char *s, char *key) { 
             static char value[512];
@@ -280,6 +273,8 @@ jobs:
           echo ""
           echo "Your CRBOT library has been successfully compiled for Android!"
           echo "Download the artifact and copy libcrbot.so to your Android device."
+          echo ""
+          echo "🎮 Ready to play Quake 2 with bots on Android! 🎮"
         else
           echo "❌ FAILED: libcrbot.so not found"
           ls -la libs/ 2>/dev/null || echo "No libs directory"
