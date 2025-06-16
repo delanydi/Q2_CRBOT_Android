@@ -27,28 +27,69 @@ jobs:
         
     - name: Prepare NDK project structure
       run: |
-        echo "Creating jni directory structure"
+        echo "Creating proper jni directory structure"
+        
+        # Create jni directory if it doesn't exist
         mkdir -p jni
         
-        # Move build files to jni directory
-        cp Android.mk jni/
-        cp Application.mk jni/
+        # Copy build files to jni directory (only if they exist in root)
+        if [ -f "Android.mk" ]; then
+          cp Android.mk jni/
+          echo "Copied Android.mk to jni/"
+        fi
         
-        # Move all source files to jni directory
-        cp *.c jni/ 2>/dev/null || true
-        cp *.h jni/ 2>/dev/null || true
+        if [ -f "Application.mk" ]; then
+          cp Application.mk jni/
+          echo "Copied Application.mk to jni/"
+        fi
+        
+        # Copy all source files to jni directory
+        find . -maxdepth 1 -name "*.c" -exec cp {} jni/ \;
+        find . -maxdepth 1 -name "*.h" -exec cp {} jni/ \;
         
         echo "Contents of jni directory:"
         ls -la jni/
         
+        echo "Checking Android.mk content:"
+        head -10 jni/Android.mk
+        
+    - name: Update Application.mk for newer NDK
+      run: |
+        # Update Application.mk for NDK 27.2 compatibility
+        cat > jni/Application.mk << 'EOF'
+        APP_PLATFORM := android-21
+        APP_ABI := armeabi-v7a arm64-v8a
+        APP_STL := c++_static
+        APP_OPTIM := release
+        EOF
+        
+        echo "Updated Application.mk:"
+        cat jni/Application.mk
+        
     - name: Build CRBOT for ${{ matrix.abi }}
       run: |
         echo "Building for architecture: ${{ matrix.abi }}"
+        echo "NDK version: $($ANDROID_NDK_ROOT/ndk-build --version)"
         
         # Build using standard NDK structure
-        $ANDROID_NDK_ROOT/ndk-build APP_ABI=${{ matrix.abi }}
+        $ANDROID_NDK_ROOT/ndk-build APP_ABI=${{ matrix.abi }} -j$(nproc)
+        
+    - name: Check build results
+      run: |
+        echo "Build completed. Checking output:"
+        if [ -d "libs" ]; then
+          echo "libs directory contents:"
+          ls -la libs/
+          if [ -d "libs/${{ matrix.abi }}" ]; then
+            echo "${{ matrix.abi }} directory contents:"
+            ls -la libs/${{ matrix.abi }}/
+          fi
+        else
+          echo "No libs directory found"
+        fi
         
     - name: Upload build artifacts
+      if: success()
       uses: actions/upload-artifact@v4
       with:
         name: crbot-${{ matrix.abi }}
